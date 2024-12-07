@@ -13,62 +13,47 @@ logger = logging.getLogger(__name__)
 def verify_audio_file(file_path):
     """Verify if the audio file is valid and can be processed."""
     try:
-        print(f"[DEBUG] Starting audio file verification for: {file_path}")
         logger.debug(f"Starting audio file verification for: {file_path}")
         
         # Check basic file properties
         if not os.path.exists(file_path):
-            print(f"[ERROR] File not found: {file_path}")
             logger.error(f"File not found: {file_path}")
             return False
             
         file_size = os.path.getsize(file_path)
-        print(f"[DEBUG] File size: {file_size} bytes")
         logger.debug(f"File size: {file_size} bytes")
         if file_size == 0:
-            print("[ERROR] File is empty")
             logger.error("File is empty")
             return False
             
-        # Try reading with soundfile
+        # Try reading with librosa first (more robust)
         try:
-            print("[DEBUG] Attempting to read with soundfile...")
-            logger.debug("Attempting to read with soundfile...")
-            with sf.SoundFile(file_path) as audio_file:
-                print(f"[DEBUG] SoundFile success - Sample rate: {audio_file.samplerate}Hz, "
-                      f"Channels: {audio_file.channels}, Frames: {audio_file.frames}")
-                logger.debug(f"SoundFile success - Sample rate: {audio_file.samplerate}Hz, "
-                          f"Channels: {audio_file.channels}, Frames: {audio_file.frames}")
-                if audio_file.frames == 0:
-                    print("[ERROR] Audio file has no frames")
-                    logger.error("Audio file has no frames")
-                    return False
-        except Exception as e:
-            print(f"[WARNING] SoundFile read failed: {str(e)}")
-            logger.warning(f"SoundFile read failed with error: {str(e)}")
-            logger.debug(f"Full traceback: {traceback.format_exc()}")
-            # Don't return False here, try librosa as backup
-            
-        # Try reading with librosa
-        try:
-            print("[DEBUG] Attempting to read with librosa...")
             logger.debug("Attempting to read with librosa...")
-            y, sr = librosa.load(file_path, duration=1, sr=None)
-            print(f"[DEBUG] Librosa success - Sample rate: {sr}Hz, Length: {len(y)} samples")
+            y, sr = librosa.load(file_path, duration=5, sr=None)  # 增加到5秒以获取更好的特征
             logger.debug(f"Librosa success - Sample rate: {sr}Hz, Length: {len(y)} samples")
             if len(y) == 0:
-                print("[ERROR] Librosa loaded empty audio data")
                 logger.error("Librosa loaded empty audio data")
                 return False
             return True
         except Exception as e:
-            print(f"[ERROR] Librosa read failed: {str(e)}")
-            logger.error(f"Librosa read failed with error: {str(e)}")
-            logger.debug(f"Full traceback: {traceback.format_exc()}")
-            return False
+            logger.warning(f"Librosa read failed with error: {str(e)}")
+            
+            # Try soundfile as backup
+            try:
+                logger.debug("Attempting to read with soundfile...")
+                with sf.SoundFile(file_path) as audio_file:
+                    logger.debug(f"SoundFile success - Sample rate: {audio_file.samplerate}Hz, "
+                              f"Channels: {audio_file.channels}, Frames: {audio_file.frames}")
+                    if audio_file.frames == 0:
+                        logger.error("Audio file has no frames")
+                        return False
+                    return True
+            except Exception as sf_error:
+                logger.error(f"Both Librosa and SoundFile failed to read the audio file")
+                logger.debug(f"SoundFile error: {str(sf_error)}")
+                return False
             
     except Exception as e:
-        print(f"[ERROR] Error in verify_audio_file: {str(e)}")
         logger.error(f"Error in verify_audio_file: {str(e)}")
         logger.debug(f"Full traceback: {traceback.format_exc()}")
         return False
