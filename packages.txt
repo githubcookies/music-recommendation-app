@@ -2,3 +2,5 @@ libsndfile1
 ffmpeg
 python3-dev
 build-essential
+libasound2-dev
+libportaudio2
