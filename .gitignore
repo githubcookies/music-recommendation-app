@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Model files
+*.joblib
+*.pkl
+*.h5
+
+# Audio files
+*.mp3
+*.wav
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDE specific
+.vscode/
+.idea/
+
+# Data directories
+healing_music/
+non_healing_music/
