@@ -51,36 +51,30 @@ if uploaded_file is not None:
             st.progress(healing_probability)
             
             # Display the percentage
-            st.metric(
-                label="Healing Score",
-                value=f"{healing_percentage:.1f}%"
-            )
+            st.write(f"Healing Score: {healing_percentage:.1f}%")
             
             # Provide interpretation
-            if healing_probability > 0.7:
-                st.success("This music appears to be very healing! 🌟")
-            elif healing_probability > 0.5:
-                st.info("This music has some healing qualities. ✨")
+            if healing_percentage >= 75:
+                st.success("This music has strong healing properties! 🌟")
+            elif healing_percentage >= 50:
+                st.info("This music has moderate healing properties. ✨")
             else:
-                st.warning("This music might not be particularly healing. 🤔")
-                
-            # Additional insights
-            st.write("---")
-            st.write("Remember that music perception is subjective, and these results are based on patterns learned from our dataset.")
-            
+                st.warning("This music has limited healing properties. 🎵")
         else:
-            st.error("Sorry, there was an error analyzing your music file. Please try another file.")
+            st.error("Sorry, there was an error analyzing your music file. Please check the following:")
+            st.write("1. Make sure the file is a valid audio file (MP3 or WAV)")
+            st.write("2. The file is not corrupted or empty")
+            st.write("3. Try uploading a different file")
             
+        # Clean up
+        progress_bar.progress(100)
+        status_text.text("Analysis complete!")
+        
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
         
     finally:
         # Clean up the temporary file
-        try:
+        if os.path.exists(tmp_file_path):
             os.unlink(tmp_file_path)
-        except:
-            pass
         
-        # Complete the progress bar
-        progress_bar.progress(100)
-        status_text.text("Analysis complete!")
