@@ -2,6 +2,13 @@ import streamlit as st
 import os
 from predict import predict_healing_music
 import tempfile
+import train_model
+
+# 检查模型文件是否存在，如果不存在则训练
+if not os.path.exists('model.joblib') or not os.path.exists('scaler.joblib'):
+    st.info('First time running: Training the model...')
+    train_model.train_and_save_model()
+    st.success('Model training completed!')
 
 st.set_page_config(
     page_title="Healing Music Classifier",
