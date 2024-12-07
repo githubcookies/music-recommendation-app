@@ -10,8 +10,17 @@ import warnings
 import soundfile as sf
 import logging
 import traceback
+import sys
 
-logging.basicConfig(level=logging.INFO)
+# 设置更详细的日志记录
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('training.log')
+    ]
+)
 logger = logging.getLogger(__name__)
 
 warnings.filterwarnings('ignore')
@@ -21,12 +30,17 @@ def extract_features(file_path):
     try:
         logger.info(f"Starting feature extraction for: {file_path}")
         
+        # Verify file exists
+        if not os.path.exists(file_path):
+            logger.error(f"File does not exist: {file_path}")
+            return None
+            
         # Verify file format
         try:
             with sf.SoundFile(file_path) as sf_file:
                 logger.info(f"Audio file info: {sf_file.samplerate}Hz, {sf_file.channels} channels")
         except Exception as e:
-            logger.error(f"Error reading audio file with soundfile: {str(e)}")
+            logger.error(f"Error reading audio file with soundfile: {str(e)}\n{traceback.format_exc()}")
             return None
 
         # Load audio file with error handling
@@ -155,8 +169,14 @@ def train_and_evaluate_model():
     
     # Save model and scaler
     print("Saving model and scaler...")
-    joblib.dump(model, 'model.joblib')
-    joblib.dump(scaler, 'scaler.joblib')
+    model_dir = os.path.join(os.path.dirname(__file__), "models")
+    os.makedirs(model_dir, exist_ok=True)
+    
+    model_path = os.path.join(model_dir, "model.joblib")
+    scaler_path = os.path.join(model_dir, "scaler.joblib")
+    
+    joblib.dump(model, model_path)
+    joblib.dump(scaler, scaler_path)
     
     return model, scaler
 
