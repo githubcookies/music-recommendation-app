@@ -55,26 +55,37 @@ if uploaded_file is not None:
             
             # Provide interpretation
             if healing_percentage >= 75:
-                st.success("This music has strong healing properties! 🌟")
+                st.success("This music has strong healing properties! ")
             elif healing_percentage >= 50:
-                st.info("This music has moderate healing properties. ✨")
+                st.info("This music has moderate healing properties. ")
             else:
-                st.warning("This music has limited healing properties. 🎵")
+                st.warning("This music has limited healing properties. ")
         else:
-            st.error("Sorry, there was an error analyzing your music file. Please check the following:")
+            st.error("Sorry, there was an error analyzing your music file.")
+            st.write("Please check the following:")
             st.write("1. Make sure the file is a valid audio file (MP3 or WAV)")
             st.write("2. The file is not corrupted or empty")
-            st.write("3. Try uploading a different file")
+            st.write("3. The file format is supported (try converting to WAV if needed)")
+            st.write("4. The audio duration is at least 1 second")
+            
+            # Add technical details in an expander
+            with st.expander("Technical Details"):
+                st.write("The error could be due to one of the following:")
+                st.write("- File format not recognized by the audio processing libraries")
+                st.write("- Unsupported audio codec or compression")
+                st.write("- File corruption during upload")
+                st.write("- Insufficient audio duration for feature extraction")
+                
+            st.write("Try uploading a different file or convert your file to WAV format using an audio converter.")
             
         # Clean up
         progress_bar.progress(100)
         status_text.text("Analysis complete!")
         
     except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+        st.error(f"An unexpected error occurred: {str(e)}")
         
     finally:
         # Clean up the temporary file
         if os.path.exists(tmp_file_path):
             os.unlink(tmp_file_path)
-        
