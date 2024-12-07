@@ -3,6 +3,20 @@ import os
 from predict import predict_healing_music
 import tempfile
 import train_model
+import logging
+import io
+
+# 设置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 创建一个 StringIO 对象来捕获日志
+log_stream = io.StringIO()
+handler = logging.StreamHandler(log_stream)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # 检查模型文件是否存在，如果不存在则训练
 if not os.path.exists('model.joblib') or not os.path.exists('scaler.joblib'):
@@ -21,6 +35,9 @@ st.write("""
 Upload your music file and our AI will analyze whether it's healing music or not!
 """)
 
+# 添加调试模式切换
+debug_mode = st.sidebar.checkbox("Enable Debug Mode")
+
 uploaded_file = st.file_uploader("Choose an audio file...", type=['mp3', 'wav'])
 
 if uploaded_file is not None:
@@ -34,9 +51,17 @@ if uploaded_file is not None:
         tmp_file_path = tmp_file.name
     
     try:
+        # 清除之前的日志
+        log_stream.seek(0)
+        log_stream.truncate()
+        
         # Update status
         status_text.text("Analyzing your music...")
         progress_bar.progress(30)
+        
+        # 记录文件信息
+        file_size = len(uploaded_file.getvalue())
+        logger.info(f"Processing uploaded file: {uploaded_file.name} (size: {file_size} bytes)")
         
         # Make prediction
         healing_probability = predict_healing_music(tmp_file_path)
@@ -55,11 +80,11 @@ if uploaded_file is not None:
             
             # Provide interpretation
             if healing_percentage >= 75:
-                st.success("This music has strong healing properties! ")
+                st.success("This music has strong healing properties! 🌟")
             elif healing_percentage >= 50:
-                st.info("This music has moderate healing properties. ")
+                st.info("This music has moderate healing properties. ✨")
             else:
-                st.warning("This music has limited healing properties. ")
+                st.warning("This music has limited healing properties. 🎵")
         else:
             st.error("Sorry, there was an error analyzing your music file.")
             st.write("Please check the following:")
@@ -69,12 +94,16 @@ if uploaded_file is not None:
             st.write("4. The audio duration is at least 1 second")
             
             # Add technical details in an expander
-            with st.expander("Technical Details"):
+            with st.expander("Technical Details", expanded=True):
                 st.write("The error could be due to one of the following:")
                 st.write("- File format not recognized by the audio processing libraries")
                 st.write("- Unsupported audio codec or compression")
                 st.write("- File corruption during upload")
                 st.write("- Insufficient audio duration for feature extraction")
+                
+                # 显示详细的技术日志
+                st.subheader("Technical Log")
+                st.code(log_stream.getvalue())
                 
             st.write("Try uploading a different file or convert your file to WAV format using an audio converter.")
             
@@ -82,8 +111,17 @@ if uploaded_file is not None:
         progress_bar.progress(100)
         status_text.text("Analysis complete!")
         
+        # 在调试模式下显示完整日志
+        if debug_mode:
+            st.sidebar.subheader("Debug Log")
+            st.sidebar.code(log_stream.getvalue())
+        
     except Exception as e:
         st.error(f"An unexpected error occurred: {str(e)}")
+        logger.exception("Unexpected error")
+        if debug_mode:
+            st.sidebar.subheader("Error Log")
+            st.sidebar.code(log_stream.getvalue())
         
     finally:
         # Clean up the temporary file
