@@ -9,6 +9,7 @@ import joblib
 import warnings
 import soundfile as sf
 import logging
+import traceback
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,6 +19,8 @@ warnings.filterwarnings('ignore')
 def extract_features(file_path):
     """Extract audio features from a file."""
     try:
+        logger.info(f"Starting feature extraction for: {file_path}")
+        
         # Verify file format
         try:
             with sf.SoundFile(file_path) as sf_file:
@@ -28,97 +31,112 @@ def extract_features(file_path):
 
         # Load audio file with error handling
         try:
+            logger.info("Loading audio file...")
             y, sr = librosa.load(file_path, duration=30, sr=None)
             if len(y) == 0:
                 logger.error("Audio file is empty")
                 return None
-            logger.info(f"Loaded audio file: {len(y)} samples, {sr}Hz")
+            logger.info(f"Successfully loaded audio: {len(y)} samples, {sr}Hz sample rate")
         except Exception as e:
-            logger.error(f"Error loading audio with librosa: {str(e)}")
+            logger.error(f"Error loading audio: {str(e)}\n{traceback.format_exc()}")
             return None
 
-        # Ensure minimum duration (1 second)
-        if len(y) / sr < 1.0:
+        # Ensure minimum duration
+        duration = len(y) / sr
+        logger.info(f"Audio duration: {duration:.2f} seconds")
+        if duration < 1.0:
             logger.error("Audio file is too short (less than 1 second)")
             return None
 
-        # Feature extraction
         features_dict = {}
         
-        # 1. MFCC (13 features x 2 = 26)
         try:
+            # 1. MFCC (13 features x 2 = 26)
+            logger.info("Extracting MFCC features...")
             mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
             features_dict['mfccs_mean'] = np.mean(mfccs, axis=1)
             features_dict['mfccs_var'] = np.var(mfccs, axis=1)
+            logger.info(f"MFCC features shape: {mfccs.shape}")
         except Exception as e:
-            logger.error(f"Error extracting MFCC: {str(e)}")
+            logger.error(f"Error extracting MFCC: {str(e)}\n{traceback.format_exc()}")
             return None
 
-        # 2. Spectral Centroid (1 feature)
         try:
+            # 2. Spectral Centroid
+            logger.info("Extracting spectral centroid...")
             spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
             features_dict['spectral_centroid'] = np.mean(spectral_centroids)
         except Exception as e:
-            logger.error(f"Error extracting spectral centroid: {str(e)}")
+            logger.error(f"Error extracting spectral centroid: {str(e)}\n{traceback.format_exc()}")
             return None
 
-        # 3. Spectral Rolloff (1 feature)
         try:
+            # 3. Spectral Rolloff
+            logger.info("Extracting spectral rolloff...")
             spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
             features_dict['spectral_rolloff'] = np.mean(spectral_rolloff)
         except Exception as e:
-            logger.error(f"Error extracting spectral rolloff: {str(e)}")
+            logger.error(f"Error extracting spectral rolloff: {str(e)}\n{traceback.format_exc()}")
             return None
 
-        # 4. Zero Crossing Rate (1 feature)
         try:
+            # 4. Zero Crossing Rate
+            logger.info("Extracting zero crossing rate...")
             zero_crossing = librosa.feature.zero_crossing_rate(y)[0]
             features_dict['zero_crossing'] = np.mean(zero_crossing)
         except Exception as e:
-            logger.error(f"Error extracting zero crossing rate: {str(e)}")
+            logger.error(f"Error extracting zero crossing rate: {str(e)}\n{traceback.format_exc()}")
             return None
 
-        # 5. Chroma Features (12 features)
         try:
+            # 5. Chroma Features
+            logger.info("Extracting chroma features...")
             chroma = librosa.feature.chroma_stft(y=y, sr=sr)
             features_dict['chroma'] = np.mean(chroma, axis=1)
+            logger.info(f"Chroma features shape: {chroma.shape}")
         except Exception as e:
-            logger.error(f"Error extracting chroma features: {str(e)}")
+            logger.error(f"Error extracting chroma features: {str(e)}\n{traceback.format_exc()}")
             return None
 
-        # 6. Tempo (1 feature)
         try:
+            # 6. Tempo
+            logger.info("Extracting tempo...")
             tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
             features_dict['tempo'] = tempo
         except Exception as e:
-            logger.error(f"Error extracting tempo: {str(e)}")
+            logger.error(f"Error extracting tempo: {str(e)}\n{traceback.format_exc()}")
             return None
 
-        # 7. RMS Energy (1 feature)
         try:
+            # 7. RMS Energy
+            logger.info("Extracting RMS energy...")
             rms = librosa.feature.rms(y=y)[0]
             features_dict['rms'] = np.mean(rms)
         except Exception as e:
-            logger.error(f"Error extracting RMS energy: {str(e)}")
+            logger.error(f"Error extracting RMS energy: {str(e)}\n{traceback.format_exc()}")
             return None
 
         # Combine all features
-        features = np.concatenate([
-            features_dict['mfccs_mean'],
-            features_dict['mfccs_var'],
-            [features_dict['spectral_centroid'],
-             features_dict['spectral_rolloff'],
-             features_dict['zero_crossing'],
-             features_dict['tempo'],
-             features_dict['rms']],
-            features_dict['chroma']
-        ])
-
-        logger.info(f"Successfully extracted {len(features)} features")
-        return features
+        try:
+            logger.info("Combining features...")
+            features = np.concatenate([
+                features_dict['mfccs_mean'],
+                features_dict['mfccs_var'],
+                [features_dict['spectral_centroid'],
+                 features_dict['spectral_rolloff'],
+                 features_dict['zero_crossing'],
+                 features_dict['tempo'],
+                 features_dict['rms']],
+                features_dict['chroma']
+            ])
+            logger.info(f"Final feature vector shape: {features.shape}")
+            return features
+        except Exception as e:
+            logger.error(f"Error combining features: {str(e)}\n{traceback.format_exc()}")
+            return None
 
     except Exception as e:
-        logger.error(f"Error processing {file_path}: {str(e)}")
+        logger.error(f"Unexpected error in feature extraction: {str(e)}\n{traceback.format_exc()}")
         return None
 
 def prepare_dataset():
