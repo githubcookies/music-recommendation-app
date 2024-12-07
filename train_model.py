@@ -62,34 +62,7 @@ def extract_features(file_path):
             return None
 
         try:
-            # 2. Spectral Centroid
-            logger.info("Extracting spectral centroid...")
-            spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
-            features_dict['spectral_centroid'] = np.mean(spectral_centroids)
-        except Exception as e:
-            logger.error(f"Error extracting spectral centroid: {str(e)}\n{traceback.format_exc()}")
-            return None
-
-        try:
-            # 3. Spectral Rolloff
-            logger.info("Extracting spectral rolloff...")
-            spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
-            features_dict['spectral_rolloff'] = np.mean(spectral_rolloff)
-        except Exception as e:
-            logger.error(f"Error extracting spectral rolloff: {str(e)}\n{traceback.format_exc()}")
-            return None
-
-        try:
-            # 4. Zero Crossing Rate
-            logger.info("Extracting zero crossing rate...")
-            zero_crossing = librosa.feature.zero_crossing_rate(y)[0]
-            features_dict['zero_crossing'] = np.mean(zero_crossing)
-        except Exception as e:
-            logger.error(f"Error extracting zero crossing rate: {str(e)}\n{traceback.format_exc()}")
-            return None
-
-        try:
-            # 5. Chroma Features
+            # 2. Chroma Features
             logger.info("Extracting chroma features...")
             chroma = librosa.feature.chroma_stft(y=y, sr=sr)
             features_dict['chroma'] = np.mean(chroma, axis=1)
@@ -98,35 +71,12 @@ def extract_features(file_path):
             logger.error(f"Error extracting chroma features: {str(e)}\n{traceback.format_exc()}")
             return None
 
-        try:
-            # 6. Tempo
-            logger.info("Extracting tempo...")
-            tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-            features_dict['tempo'] = tempo
-        except Exception as e:
-            logger.error(f"Error extracting tempo: {str(e)}\n{traceback.format_exc()}")
-            return None
-
-        try:
-            # 7. RMS Energy
-            logger.info("Extracting RMS energy...")
-            rms = librosa.feature.rms(y=y)[0]
-            features_dict['rms'] = np.mean(rms)
-        except Exception as e:
-            logger.error(f"Error extracting RMS energy: {str(e)}\n{traceback.format_exc()}")
-            return None
-
         # Combine all features
         try:
             logger.info("Combining features...")
             features = np.concatenate([
                 features_dict['mfccs_mean'],
                 features_dict['mfccs_var'],
-                [features_dict['spectral_centroid'],
-                 features_dict['spectral_rolloff'],
-                 features_dict['zero_crossing'],
-                 features_dict['tempo'],
-                 features_dict['rms']],
                 features_dict['chroma']
             ])
             logger.info(f"Final feature vector shape: {features.shape}")

@@ -7,16 +7,33 @@ import logging
 import io
 
 # 设置日志
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True
+)
+
+# 确保所有模块的日志级别都是 DEBUG
+logging.getLogger('predict').setLevel(logging.DEBUG)
+logging.getLogger('train_model').setLevel(logging.DEBUG)
+logging.getLogger('librosa').setLevel(logging.DEBUG)
+logging.getLogger('soundfile').setLevel(logging.DEBUG)
+
 logger = logging.getLogger(__name__)
 
 # 创建一个 StringIO 对象来捕获日志
 log_stream = io.StringIO()
 handler = logging.StreamHandler(log_stream)
-handler.setLevel(logging.INFO)
+handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
+
+# 添加控制台处理器以确保日志也输出到控制台
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 # 检查模型文件是否存在，如果不存在则训练
 if not os.path.exists('model.joblib') or not os.path.exists('scaler.joblib'):
@@ -63,8 +80,13 @@ if uploaded_file is not None:
         file_size = len(uploaded_file.getvalue())
         logger.info(f"Processing uploaded file: {uploaded_file.name} (size: {file_size} bytes)")
         
+        # 添加文件类型检查
+        logger.info(f"File type: {uploaded_file.type}")
+        logger.info(f"Temporary file path: {tmp_file_path}")
+        
         # Make prediction
         healing_probability = predict_healing_music(tmp_file_path)
+        logger.info(f"Prediction result: {healing_probability}")
         progress_bar.progress(90)
         
         if healing_probability is not None:
