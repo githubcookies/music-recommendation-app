@@ -4,3 +4,7 @@ python3-dev
 build-essential
 libasound2-dev
 libportaudio2
+portaudio19-dev
+libportaudiocpp0
+libsndfile1-dev
+libasound-dev
